@@ -40,7 +40,7 @@ result = get_max([1, 2, 3])
 ---
 
 Deine Aufgabe:
-1. Benenne folgende Funktion: `has_spec()` in `has_specification()` um.
+1. Benenne folgende Funktion: `has_spec()` in der Datei: `_hooks.py` in `has_specification()` um.
 2. Passe jede relevante Stelle im gesamten Projekt an.
 
 Ausgabe:
