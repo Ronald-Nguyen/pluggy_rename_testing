@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -294,7 +292,7 @@ class HookCaller:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
-    def has_spec(self) -> bool:
+    def has_specification(self) -> bool:
         return self.spec is not None
 
     def set_specification(

@@ -528,7 +528,7 @@ class HookSpec:
 
     def __init__(self, namespace: _Namespace, name: str, opts: HookspecOpts) -> None:
         self.namespace = namespace
-        self.function = getattr(namespace, name)
+        self.function: Callable[..., object] = getattr(namespace, name)
         self.name = name
         self.argnames, self.kwargnames = varnames(self.function)
         self.opts = opts

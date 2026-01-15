@@ -1,32 +1,29 @@
 Iteration 3
-Timestamp: 2026-01-15T15:01:30.568290
-Success: False
+Timestamp: 2026-01-15T22:05:29.476926
+Success: True
 
 ============================================================
 STDOUT:
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-0.1.dev919+g0f099630a
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: C:\Users\ronal\pluggy_rename_testing
+configfile: tox.ini
+testpaths: testing
+plugins: anyio-4.12.1, hypothesis-6.148.8, benchmark-5.2.3, cov-7.0.0
+collected 126 items
+
+testing\test_details.py ..........                                       [  7%]
+testing\test_helpers.py ......                                           [ 12%]
+testing\test_hookcaller.py ........................                      [ 31%]
+testing\test_invocations.py ...............                              [ 43%]
+testing\test_multicall.py ........................                       [ 62%]
+testing\test_pluginmanager.py .........................................  [ 95%]
+testing\test_result.py .                                                 [ 96%]
+testing\test_tracer.py ....                                              [ 99%]
+testing\test_warnings.py .                                               [100%]
+
+============================= 126 passed in 0.50s =============================
 
 ============================================================
 STDERR:
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Scripts\pytest.exe\__main__.py", line 6, in <module>
-    sys.exit(console_main())
-             ~~~~~~~~~~~~^^
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\config\__init__.py", line 223, in console_main
-    code = main()
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\config\__init__.py", line 193, in main
-    config = _prepareconfig(new_args, plugins)
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\config\__init__.py", line 352, in _prepareconfig
-    initial_config = get_config(args, plugins)
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\config\__init__.py", line 311, in get_config
-    pluginmanager = PytestPluginManager()
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\config\__init__.py", line 451, in __init__
-    self.register(self)
-    ~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\ronal\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\config\__init__.py", line 522, in register
-    plugin_name = super().register(plugin, name)
-  File "C:\Users\ronal\pluggy_rename_testing\src\pluggy\_manager.py", line 130, in register
-    elif hook.has_spec():
-         ^^^^^^^^^^^^^
-AttributeError: 'HookCaller' object has no attribute 'has_spec'
