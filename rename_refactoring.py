@@ -112,15 +112,13 @@ def apply_changes(project_dir: Path | str, files: dict[str, str]) -> None:
         except Exception as e:
             print(f" Fehler beim Schreiben von {filename}: {e}")
 
-def run_pytest(project_dir: Path) -> dict:
+def run_pytest():
     """Führt pytest aus und gibt das Ergebnis zurück."""
     try:
         result = subprocess.run(
-            ['pytest', '-v', '--tb=short'], 
-            cwd=project_dir, 
+            ['pytest'], 
             capture_output=True, 
             text=True, 
-            timeout=60
         )
         return {
             'success': result.returncode == 0,
@@ -128,8 +126,6 @@ def run_pytest(project_dir: Path) -> dict:
             'stderr': result.stderr,
             'returncode': result.returncode
         }
-    except subprocess.TimeoutExpired:
-        return {'success': False, 'stdout': '', 'stderr': 'Timeout', 'returncode': -1}
     except Exception as e:
         return {'success': False, 'stdout': '', 'stderr': str(e), 'returncode': -1}
 
@@ -166,6 +162,8 @@ def main():
 
     final_prompt = f"{YOUR_PROMPT}\n\nStruktur:\n{project_structure}\n\nCode:\n{code_block}"
 
+    test_result = run_pytest()
+
     successful_iterations = 0
     failed_iterations = 0
 
@@ -193,7 +191,7 @@ def main():
                 continue
 
             apply_changes(PROJECT_DIR, files)
-            test_result = run_pytest(PROJECT_DIR)
+            test_result = run_pytest()
 
             if test_result['success']:
                 successful_iterations += 1
