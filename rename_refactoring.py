@@ -198,7 +198,7 @@ def main():
                 print("Test bestanden!")
             else:
                 failed_iterations += 1
-                print("Tests fehlgeschlagen.")
+                print("Test fehlgeschlagen.")
 
             save_results(i, RESULTS_DIR / f"iteration_{i:02d}", files, test_result, response_text)
 
