@@ -167,7 +167,7 @@ def main():
     successful_iterations = 0
     failed_iterations = 0
 
-    for i in range(1, 2):
+    for i in range(1, 11):
         print(f"\nITERATION {i}/10")
         restore_project(backup_dir, PROJECT_DIR)
 
@@ -195,8 +195,10 @@ def main():
 
             if test_result['success']:
                 successful_iterations += 1
+                print("Test bestanden!")
             else:
                 failed_iterations += 1
+                print("Tests fehlgeschlagen.")
 
             save_results(i, RESULTS_DIR / f"iteration_{i:02d}", files, test_result, response_text)
 
