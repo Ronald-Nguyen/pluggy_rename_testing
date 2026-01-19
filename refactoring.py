@@ -1,21 +1,63 @@
 import os
+from pyexpat import model
 import re
 import shutil
 import argparse
 import subprocess
 from pathlib import Path
 from datetime import datetime
+from unittest import result
 from google import genai
+from groq import Groq
+from mistralai import Mistral
+from ollama import ChatResponse, chat
 
 REFACTORING = 'rename'
-PATH = 'src/pluggy'
+PATH = 'colorama'
+ITERATIONS = 10
+GEMINI = 'gemini-3-pro-preview'
+LLAMA = 'llama-3.3-70b-versatile'
+MISTRAL = 'mistral-large-2512'
+CODESTRAL = 'codestral-2501'
+MODEL_OLLAMA = 'devstral-2_123b-cloud'
+MODEL_GROQ = LLAMA
+MODEL_GEMINI = GEMINI
+MODEL_MISTRAL = CODESTRAL
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+MISTRAL_API_KEY = os.environ.get('MISTRAL_API_KEY')
+LLM_API_KEY = MISTRAL_API_KEY
+client = None
+MODEL = None
 
-try:
-    client = genai.Client()
-    print("Gemini API Key aus Umgebungsvariable geladen")
-except Exception as e:
-    print(f"Fehler beim Laden des API-Keys: {e}")
-    exit(1)
+if LLM_API_KEY == GROQ_API_KEY:
+    MODEL = MODEL_GROQ
+    try:
+        client = Groq(api_key=LLM_API_KEY)
+        print("Groq API Key aus Umgebungsvariable geladen")
+    except Exception as e:
+        print(f"Fehler beim Laden des API-Keys: {e}")
+        exit(1)
+elif LLM_API_KEY == MISTRAL_API_KEY:
+    MODEL = MODEL_MISTRAL
+    try:
+        client = Mistral(api_key=LLM_API_KEY)
+        print("Mistral API Key aus Umgebungsvariable geladen")
+    except Exception as e:
+        print(f"Fehler beim Laden des API-Keys: {e}")
+        exit(1)
+elif LLM_API_KEY == GEMINI_API_KEY:
+    MODEL = MODEL_GEMINI
+    try:
+        client = genai.Client(api_key=LLM_API_KEY)
+        print("Gemini API Key aus Umgebungsvariable geladen")
+    except Exception as e:
+        print(f"Fehler beim Laden des API-Keys: {e}")
+        exit(1)
+else:
+    MODEL = MODEL_OLLAMA
+
+
 
 parser = argparse.ArgumentParser(description="Projektpfad angeben")
 parser.add_argument("--project-path", type=str, default=PATH, help="Pfad des Projekts")
@@ -23,7 +65,7 @@ args = parser.parse_args()
 
 PROJECT_DIR = Path(args.project_path)
 PROMPT_TEMPLATE = Path(f"{REFACTORING}.txt").read_text(encoding='utf-8')
-RESULTS_DIR = Path(REFACTORING + "_results")
+RESULTS_DIR = Path(REFACTORING + "_results_" + MODEL)
 RESULTS_DIR.mkdir(exist_ok=True)
 
 def get_project_structure(project_dir: Path) -> str:
@@ -54,8 +96,8 @@ def get_all_python_files(project_dir: Path) -> str:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     relative_path = file_path.relative_to(project_dir)
-                    code_block += f"\n{'='*60}\nDatei: {relative_path}\n{'='*60}\n"
-                    code_block += content + "\n"
+                    code_block += f"\n\nFile `{relative_path}`:\n```python\n"
+                    code_block += content + "```\n"
                 except Exception as e:
                     print(f"Fehler beim Lesen von {file_path}: {e}")
     return code_block
@@ -63,7 +105,7 @@ def get_all_python_files(project_dir: Path) -> str:
 def parse_ai_response(response_text: str) -> dict:
     """Parst die AI-Antwort und extrahiert Dateinamen und Code."""
     files = {}
-    pattern = r"Datei\s+`([^`]+)`:\s*```python\s*(.*?)\s*```"
+    pattern = r"File\s+`([^`]+)`:\s*```python\s*(.*?)\s*```"
     matches = re.findall(pattern, response_text, re.DOTALL)
     for filename, code in matches:
         files[filename] = code.strip()
@@ -154,8 +196,57 @@ def save_results(iteration: int, result_dir: Path, files: dict, test_result: dic
     with open(result_dir / "ai_response.txt", 'w', encoding='utf-8') as f:
         f.write(response_text)
 
-    
+def write_summary(text: str) -> None:
+    with open(RESULTS_DIR / f"{MODEL}_summary_results.txt", "a", encoding="utf-8") as f:
+        f.write(text)
 
+def groq_generate(final_prompt: str) -> str:
+    resp = client.chat.completions.create(
+        model=MODEL,
+        content=final_prompt
+    )
+    return resp.choices[0].message.content
+
+def gemini_generate(final_prompt: str) -> str:
+    """Fragt Gemini (Text Completions) an und gibt den Text-Content zurück."""
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=final_prompt
+    )
+
+    response_text = getattr(response, "text", None)
+    if not response_text and hasattr(response, "candidates"):
+        parts = [p.text for c in response.candidates for p in c.content.parts if hasattr(p, "text")]
+        response_text = "\n".join(parts)
+    
+    if not response_text:
+        raise ValueError("Leere Antwort erhalten")
+    
+    return response_text
+
+def mistral_generate(prompt: str) -> str:
+    res = client.chat.complete(
+        model=MODEL,
+        messages=[
+            {
+                "content": prompt,
+                "role": "user",
+            },
+        ],
+        temperature=0.2,
+        stream=False
+    )
+    return res.choices[0].message.content
+
+
+def ollama_generate(final_prompt: str) -> str:
+    response: ChatResponse = chat(model='qwen2.5-coder:7b', messages=[
+    {
+        'role': 'user',
+        'content': final_prompt,
+    },
+    ])
+    return response.message.content
 
 def main():
     YOUR_PROMPT = PROMPT_TEMPLATE
@@ -168,27 +259,25 @@ def main():
     code_block = get_all_python_files(PROJECT_DIR)
 
     final_prompt = f"{YOUR_PROMPT}\n\nStruktur:\n{project_structure}\n\nCode:\n{code_block}"
-
     successful_iterations = 0
     failed_iterations = 0
+    
+    with open(RESULTS_DIR / "full_prompt.txt", "w", encoding="utf-8") as f:
+        f.write(final_prompt)
 
-    for i in range(1, 11):
-        print(f"\nITERATION {i}/10")
+    for i in range(1, ITERATIONS   +1):
+        print(f"\nITERATION {i}/{ITERATIONS}")
         restore_project(backup_dir, PROJECT_DIR)
 
         try:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash-lite',
-                contents=final_prompt
-            )
-            
-            response_text = getattr(response, "text", None)
-            if not response_text and hasattr(response, "candidates"):
-                parts = [p.text for c in response.candidates for p in c.content.parts if hasattr(p, "text")]
-                response_text = "\n".join(parts)
-            
-            if not response_text:
-                raise ValueError("Leere Antwort erhalten")
+            if LLM_API_KEY == GROQ_API_KEY:
+                response_text = groq_generate(final_prompt)
+            elif LLM_API_KEY == MISTRAL_API_KEY:
+                response_text = mistral_generate(final_prompt)
+            elif LLM_API_KEY == GEMINI_API_KEY:
+                response_text = gemini_generate(final_prompt)
+            else:
+                response_text = ollama_generate(final_prompt)
 
             files = parse_ai_response(response_text)
             if not files:
@@ -200,10 +289,12 @@ def main():
 
             if test_result['success']:
                 successful_iterations += 1
-                print("Tests bestanden.")
+                write_summary(f"\nIteration {i} erfolgreich.")
+                print(" Tests bestanden.")
             else:
                 failed_iterations += 1
-                print("Tests fehlgeschlagen.")
+                write_summary(f"\nIteration {i} fehlgeschlagen.")
+                print(" Tests fehlgeschlagen.")
 
             save_results(i, RESULTS_DIR / f"iteration_{i:02d}", files, test_result, response_text)
 
@@ -211,8 +302,9 @@ def main():
             print(f"Fehler: {e}")
             failed_iterations += 1
 
-    print(f"\nFertig. Erfolgsrate: {successful_iterations/10*100:.1f}%")
+    print(f"\nFertig. Erfolgsrate: {successful_iterations/ITERATIONS*100:.1f}%")
     restore_project(backup_dir, PROJECT_DIR)
+    write_summary(f"\nFertig. Erfolgsrate: {successful_iterations/ITERATIONS*100:.1f}%")
 
 if __name__ == "__main__":
     main()
