@@ -292,7 +292,7 @@ class HookCaller:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
-    def has_specification(self) -> bool:
+    def has_spec(self) -> bool:
         return self.spec is not None
 
     def set_specification(

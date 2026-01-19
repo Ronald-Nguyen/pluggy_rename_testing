@@ -20,7 +20,6 @@ import warnings
 
 from ._result import Result
 
-
 _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., object])
 
@@ -32,19 +31,13 @@ _HookExec: TypeAlias = Callable[
 ]
 _HookImplFunction: TypeAlias = Callable[..., _T | Generator[None, Result[_T], None]]
 
-
 class HookspecOpts(TypedDict):
-
-
     firstresult: bool
     historic: bool
     warn_on_impl: Warning | None
     warn_on_impl_args: Mapping[str, Warning] | None
 
-
 class HookimplOpts(TypedDict):
-
-
     wrapper: bool
     hookwrapper: bool
     optionalhook: bool
@@ -52,11 +45,8 @@ class HookimplOpts(TypedDict):
     trylast: bool
     specname: str | None
 
-
 @final
 class HookspecMarker:
-
-
     __slots__ = ("project_name",)
 
     def __init__(self, project_name: str) -> None:
@@ -90,8 +80,6 @@ class HookspecMarker:
         warn_on_impl: Warning | None = None,
         warn_on_impl_args: Mapping[str, Warning] | None = None,
     ) -> _F | Callable[[_F], _F]:
-
-
         def setattr_hookspec_opts(func: _F) -> _F:
             if historic and firstresult:
                 raise ValueError("cannot have a historic firstresult hook")
@@ -109,11 +97,8 @@ class HookspecMarker:
         else:
             return setattr_hookspec_opts
 
-
 @final
 class HookimplMarker:
-
-
     __slots__ = ("project_name",)
 
     def __init__(self, project_name: str) -> None:
@@ -153,8 +138,6 @@ class HookimplMarker:
         specname: str | None = None,
         wrapper: bool = False,
     ) -> _F | Callable[[_F], _F]:
-
-
         def setattr_hookimpl_opts(func: _F) -> _F:
             opts: HookimplOpts = {
                 "wrapper": wrapper,
@@ -172,7 +155,6 @@ class HookimplMarker:
         else:
             return setattr_hookimpl_opts(function)
 
-
 def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
     opts.setdefault("tryfirst", False)
     opts.setdefault("trylast", False)
@@ -181,12 +163,9 @@ def normalize_hookimpl_opts(opts: HookimplOpts) -> None:
     opts.setdefault("optionalhook", False)
     opts.setdefault("specname", None)
 
-
 _PYPY = hasattr(sys, "pypy_version_info")
 
-
 def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
-
     if inspect.isclass(func):
         try:
             func = func.__init__
@@ -241,32 +220,23 @@ def varnames(func: object) -> tuple[tuple[str, ...], tuple[str, ...]]:
 
     return args, kwargs
 
-
 @final
 class HookRelay:
-
-
     __slots__ = ("__dict__",)
 
     def __init__(self) -> None:
         """:meta private:"""
 
     if TYPE_CHECKING:
-
         def __getattr__(self, name: str) -> HookCaller: ...
 
-
 _HookRelay = HookRelay
-
 
 _CallHistory: TypeAlias = list[
     tuple[Mapping[str, object], Callable[[Any], None] | None]
 ]
 
-
 class HookCaller:
-
-
     __slots__ = (
         "name",
         "spec",
@@ -282,7 +252,6 @@ class HookCaller:
         specmodule_or_class: _Namespace | None = None,
         spec_opts: HookspecOpts | None = None,
     ) -> None:
-
         self.name: Final = name
         self._hookexec: Final = hook_execute
         self._hookimpls: Final[list[HookImpl]] = []
@@ -292,7 +261,7 @@ class HookCaller:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
-    def has_spec(self) -> bool:
+    def has_specification(self) -> bool:
         return self.spec is not None
 
     def set_specification(
@@ -310,7 +279,6 @@ class HookCaller:
             self._call_history = []
 
     def is_historic(self) -> bool:
-
         return self._call_history is not None
 
     def _remove_plugin(self, plugin: _Plugin) -> None:
@@ -321,11 +289,9 @@ class HookCaller:
         raise ValueError(f"plugin {plugin!r} not found")
 
     def get_hookimpls(self) -> list[HookImpl]:
-
         return self._hookimpls.copy()
 
     def _add_hookimpl(self, hookimpl: HookImpl) -> None:
-
         for i, method in enumerate(self._hookimpls):
             if method.hookwrapper or method.wrapper:
                 splitpoint = i
@@ -367,7 +333,6 @@ class HookCaller:
                     break
 
     def __call__(self, **kwargs: object) -> Any:
-
         assert not self.is_historic(), (
             "Cannot directly call a historic hook - use call_historic instead."
         )
@@ -380,7 +345,6 @@ class HookCaller:
         result_callback: Callable[[Any], None] | None = None,
         kwargs: Mapping[str, object] | None = None,
     ) -> None:
-
         assert self._call_history is not None
         kwargs = kwargs or {}
         self._verify_all_args_are_provided(kwargs)
@@ -395,7 +359,6 @@ class HookCaller:
     def call_extra(
         self, methods: Sequence[Callable[..., object]], kwargs: Mapping[str, object]
     ) -> Any:
-
         assert not self.is_historic(), (
             "Cannot directly call a historic hook - use call_historic instead."
         )
@@ -422,7 +385,6 @@ class HookCaller:
         return self._hookexec(self.name, hookimpls, kwargs, firstresult)
 
     def _maybe_apply_history(self, method: HookImpl) -> None:
-
         if self.is_historic():
             assert self._call_history is not None
             for kwargs, result_callback in self._call_history:
@@ -431,14 +393,9 @@ class HookCaller:
                     assert isinstance(res, list)
                     result_callback(res[0])
 
-
 _HookCaller = HookCaller
 
-
 class _SubsetHookCaller(HookCaller):
-
-
-
     __slots__ = (
         "_orig",
         "_remove_plugins",
@@ -469,11 +426,8 @@ class _SubsetHookCaller(HookCaller):
     def __repr__(self) -> str:
         return f"<_SubsetHookCaller {self.name!r}>"
 
-
 @final
 class HookImpl:
-
-
     __slots__ = (
         "function",
         "argnames",
@@ -495,7 +449,6 @@ class HookImpl:
         function: _HookImplFunction[object],
         hook_impl_opts: HookimplOpts,
     ) -> None:
-
         self.function: Final = function
         argnames, kwargnames = varnames(self.function)
         self.argnames: Final = argnames
@@ -511,7 +464,6 @@ class HookImpl:
 
     def __repr__(self) -> str:
         return f"<HookImpl plugin_name={self.plugin_name!r}, plugin={self.plugin!r}>"
-
 
 @final
 class HookSpec:

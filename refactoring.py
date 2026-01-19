@@ -13,7 +13,7 @@ from mistralai import Mistral
 from ollama import ChatResponse, chat
 
 REFACTORING = 'rename'
-PATH = 'colorama'
+PATH = 'src/pluggy'
 ITERATIONS = 10
 GEMINI = 'gemini-3-pro-preview'
 LLAMA = 'llama-3.3-70b-versatile'

@@ -292,7 +292,7 @@ class HookCaller:
             assert spec_opts is not None
             self.set_specification(specmodule_or_class, spec_opts)
 
-    def has_spec(self) -> bool:
+    def has_specification(self) -> bool:
         return self.spec is not None
 
     def set_specification(
@@ -337,9 +337,9 @@ class HookCaller:
         else:
             start, end = 0, splitpoint
 
-        if hookimpl.trylast:
+        if hookimpl.tryfirst:
             self._hookimpls.insert(start, hookimpl)
-        elif hookimpl.tryfirst:
+        elif hookimpl.trylast:
             self._hookimpls.insert(end, hookimpl)
         else:
             i = end - 1
